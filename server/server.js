@@ -1,21 +1,19 @@
-const express = require('express'); 
-const socketIO = require('socket.io'); 
-const http = require('http'); 
+const express = require('express');
+const socketIO = require('socket.io');
+const http = require('http');
 const path = require('path');
-const app = express(); 
-const server = http.Server(app); 
+const app = express();
+const server = http.Server(app);
 const io = socketIO(server);
 
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, './../client/index.html'));
-});
+app.use(express.static(path.join(__dirname, '../client')));
 
-app.get('/myJS', (req, res) => {
-    console.log('Found new route');
-    res.sendFile(path.join(__dirname, './../client/index.js'))
-})
+// app.get('/myJS', (req, res) => {
+//     console.log('Found new route');
+//     res.sendFile(path.join(__dirname, './../client/index.js'))
+// })
 
-io.on('connection', function(socket) {
+io.on('connection', function (socket) {
     socket.join('myroom2');
     var clientsInRoom = io.sockets.adapter.rooms['myroom2'];
     var numClients = clientsInRoom ? Object.keys(clientsInRoom.sockets).length : 0;
@@ -23,7 +21,7 @@ io.on('connection', function(socket) {
     if (numClients === 1) {
         socket.emit('created');
     }
-   
+
     if (numClients === 2) {
         console.log('initiating the CPC');
         socket.emit('joined');
