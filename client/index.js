@@ -177,3 +177,91 @@ function sendMessage(message) {
 function logError(err) {
     console.log('Error:', err);
 }
+
+//On receive message callback. 
+onReceiveMessageCallback = (event) => { 
+	receiveBuffer.push(event.data); //Push event data to the buffer. 
+	receivedSize += event.data.byteLength; //Keep track of the bytes sent. 
+
+	receiveProgress.value = receivedSize; //HTML attribute is updated with size that's sent. 
+
+	//Signaling protocol is told about the expected file size (and name, hash, etc). 
+	var file = fileInput.files[0]; //Already mentioned but if the user selects just one file, it is then only necessary to consider the first file of the list.
+	if (receivedSize === file.size) { //File has finished transferring. 
+		var received = new window.Blob(receiveBuffer); //A Blob object represents a file-like object of immutable, raw data. Blobs represent data that isn't necessarily in a JavaScript-native format. 
+		receiveBuffer = []; //Empty bufffer. 
+
+		//Blob URI/URL was created by JavaScript, refers to data that your browser currently has in memory (only in current page). 
+		/*A blob: URL does not refer to data that exists on the server, it refers to data that your browser currently has in memory, for the current page. 
+		It will not be available on other pages, it will not be available in other browsers, and it will not be available from other computers.
+		It is possible convert a blob: URL into a data: URL, at least in Chrome. You can use an AJAX request to "fetch" the data from the blob: 
+		URL (even though it's really just pulling it out of your browser's memory, not making an HTTP request).*/
+		downloadAnchor.href = URL.createObjectURL(received); //Set link to received file.
+		downloadAnchor.download = file.name; 
+		downloadAnchor.textContent = 'Click to download \'' + file.name + '\' (' + file.size + 'bytes)'; 
+		downloadAnchor.style.display = 'block';  
+
+		//Calculate bitrate to be displayed. 
+		var bitrate = Math.round(receivedSize * 8 /((new Date()).getTime() - timeStampStart));
+		bitrateDiv.innerHTML = '<strong>Average Bitrate:</strong> ' + bitrate + ' kbits/sec (max: ' + bitrateMax + ' kbits/sec)'; 
+
+		if (statsInterval) { 
+			window.clearInterval(statsInterval); //Method clears a timer. 
+			statsInterval = null; 
+		}//end if
+
+		closeDataChannels(); 
+	}
+}
+
+displayStats = () => { 
+  var display = function(bitrate) { 
+    bitrateDiv.innerHTML = '<strong>Current Bitrate: </string> ' + bitrate + ' kbits/sec'; //Display bitrate. Attribute in HTML.
+  } 
+
+  if (remoteConnection && remoteConnection.iceConnectionState === 'connected') { 
+    if (adapter.browserDetails.browser === 'chrome') { 
+      /*method getStats() asynchronously requests an RTCStatsReport object which provides 
+      statistics about incoming traffic on the owning RTCPeerConnection, returning a 
+      Promise whose fulfillment handler will be called once the results are available.*/
+      remoteConnection.getStats().then(function(stats) { 
+        //Search for active candiate pair. 
+        let activeCandidatePair; 
+        stats.forEach(function(report) { 
+          if (report.type === 'transport') { 
+            activeCandidatePair = stats.get(report.selectedCandidatePairId); 
+          }//end if
+        }); 
+        if (activeCandidatePair) { 
+          if (timestampPrev === activeCandidatePair) return; //If timestamPrev matches return out. ?
+
+          //Calculate current bitrate. 
+          var bytesNow = activeCandidatePair.bytesReceived; //Property on stats object. 
+          var bitrate = Math.round((bytesNow - bytesPrev)*8/(activeCandidatePair.timestamp - timestampPrev)); //https://blog.frame.io/2017/03/06/calculate-video-bitrates/
+          display(bitrate); //Function used to display.
+          timestampPrev = activeCandidatePair.timestamp; //Reset previous timestamp.  
+          bytesPrev = bytesNow; //Reset previous bytes. 
+          if (bitrate > bitrateMax) bitrateMax = bitrate; //Change bitrateMax; 
+        }//end if
+      });
+    }//end chrome browser if
+  }//end connection if 
+}
+
+closeDataChannels = () => { 
+	console.log('Closing data channels.'); 
+	sendChannel.close(); 
+	console.log('Closed data channel with label: ' + sendChannel.label); 
+	if (ReceiveChannel) { 
+		ReceiveChannel.close();
+		console.log('Closed data channel with label: ' + ReceiveChannel.label); 
+	}//end if 
+	localConnection.close(); 
+	remoteConnection.close(); 
+	localConnection = null; 
+	remoteConnection = null; 
+	console.log('Closed peer connection.'); 
+	
+	//Reset fileInput to enter new file. 
+	fileInput.disabled = false; 
+}
