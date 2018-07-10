@@ -1,12 +1,15 @@
 (function () {
 
   let PAGE_LOAD_KEY = "totalNetworkServerTime";
-  let precedingTime = pageLoadTotalTime = counter = 0;
+  let counter = 0;
+  let pageLoadTotalTime = counter;
+  let precedingTime = pageLoadTotalTime;
+
 
   let orderOfEvents = [
     {
       'key': 'navigation',
-      'label': 'Navigation Starts',
+      'label': 'Navigation Start',
       'calculation': 'Navigation Starts + Redirects + Unload/Refreshes'
     },
 

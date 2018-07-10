@@ -1,7 +1,11 @@
+html {
+  background-color: #EFEFEF;
+}
 body {
-  background-color: white;
-  border: 1px solid #EFEFEF;
+  /* background-color: white; */
+  border: 1px solid whitesmoke;
   margin: 10px;
+  background-color: cornsilk;
   min-width: 475px;
   overflow-x: hidden;
   padding: 10px;
@@ -27,6 +31,7 @@ body {
   float: left;
   height: 20px;
   line-height: 20px;
+  font-weight: bold
 }
 
 .performance-row:hover {
@@ -87,6 +92,6 @@ body {
   clear: both;
 }
 
-.footer, .explanation {
+.explanation {
   margin-top: 10px;
 }
