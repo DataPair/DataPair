@@ -6,6 +6,8 @@ const app = express();
 const server = http.Server(app); 
 const Initiators = require('./controller/initiatorDataStructure');
 
+// Master!
+
 const DataPeerConfigurations = { 
   serverThreshold: 2,
   imageTransfer: true,
