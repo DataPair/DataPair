@@ -1,0 +1,23 @@
+{
+  "name": "WebRTC Metrics",
+  "version": "1.0",
+  "description": "Measure latency of site using regular request against WebRTC.",
+  "background": {
+    "scripts": [
+      "background.js",
+      "onclick.js"
+    ],
+    "persistent": false
+  },
+  "browser_action": {
+    "default_icon": "p2pBox512.png",
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "http://*/*",
+    "https://*/*"
+  ],
+  "manifest_version": 2
+}
