@@ -8,7 +8,7 @@ const Initiators = require('./controller/initiatorDataStructure');
 
 // Master!
 
-const DataPeerConfigurations = { 
+const DataPairConfigurations = { 
   serverThreshold: 2,
   imageTransfer: true,
   geoConnect: false,
@@ -37,22 +37,20 @@ app.get('/images/:imageName', (req, res) => {
 
 ////////////////////////////// Client Configuration Inputs //////////////////////////////
 
-
-DataPeerInvocation(server, DataPeerConfigurations);
+DataPair(server, DataPairConfigurations);
 
 ////////////////////////////// Socket listeners //////////////////////////////
 
-
-function DataPeerInvocation(server, DataPeerConfigurations) {
+function DataPair(server, DataPairConfigurations) {
 
   // Default Configuration Settings
-  DataPeerConfigurations = {... DataPeerConfigurations}
-  DataPeerConfigurations.threshold = DataPeerConfigurations.serverThreshold || 1;
-  DataPeerConfigurations.imageTransfer = DataPeerConfigurations.imageTransfer !== false; // // need to add conditions
+  DataPairConfigurations = {... DataPairConfigurations}
+  DataPairConfigurations.threshold = DataPairConfigurations.serverThreshold || 1;
+  DataPairConfigurations.imageTransfer = DataPairConfigurations.imageTransfer !== false; // // need to add conditions
   // asset  types if jpeg, gif
   // browser comp. 
   // device 
-  //DataPeerConfigurations.geoConnect = DataPeerConfigurations.geoConnect !== false; // need to add conditions
+  //DataPairConfigurations.geoConnect = DataPairConfigurations.geoConnect !== false; // need to add conditions
   
   const io = socket(server);
   
@@ -62,7 +60,7 @@ function DataPeerInvocation(server, DataPeerConfigurations) {
     client.emit('retrieve_data');
 
     client.on('retrieve_data', (downloaded) => {
-      if (!downloaded) getData(client, io, DataPeerConfigurations);
+      if (!downloaded) getData(client, io, DataPairConfigurations);
       else console.log('We meet again!');
     });
 
@@ -99,14 +97,14 @@ function DataPeerInvocation(server, DataPeerConfigurations) {
 }
 
 function getData(client, io) { 
-  if (!DataPeerConfigurations.imageTransfer) { // Image transfer off
-    console.log('imageTransfer is', DataPeerConfigurations.imageTransfer);
+  if (!DataPairConfigurations.imageTransfer) { // Image transfer off
+    console.log('imageTransfer is', DataPairConfigurations.imageTransfer);
     client.emit('access_directly_from_server');
-  } else if (initNumber < DataPeerConfigurations.serverThreshold) { // Not enough peers
-    console.log('Not starting because initNumber is', initNumber, 'but threshold is', DataPeerConfigurations.serverThreshold);
+  } else if (initNumber < DataPairConfigurations.serverThreshold) { // Not enough peers
+    console.log('Not starting because initNumber is', initNumber, 'but threshold is', DataPairConfigurations.serverThreshold);
     client.emit('access_directly_from_server');
   } else { // Do the peer connection
-    console.log('inintnumber is', initNumber, 'threshold is', DataPeerConfigurations.serverThreshold)
+    console.log('inintnumber is', initNumber, 'threshold is', DataPairConfigurations.serverThreshold)
     console.log('Initiating a connection between',inits.head, 'and', client.id);
     client.emit('receiver', inits.head);
     io.to(inits.head).emit('sender', client.id);
