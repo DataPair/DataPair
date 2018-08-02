@@ -14,7 +14,7 @@
   "devDependencies": {},
   "scripts": {
     "start": "nodemon server/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "nodemon demo/server/demo-server.js"
   },
   "repository": {
     "type": "git",

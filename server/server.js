@@ -1,119 +1,79 @@
-const express = require('express'); 
 const socket = require('socket.io'); 
 const http = require('http'); 
 const path = require('path');
-const app = express(); 
-const server = http.Server(app); 
-const Initiators = require('./controller/initiatorDataStructure');
+const Initiators = require('./initiatorDataStructure');
 
-// Master!
+// Sends new clients to get data from the server or
+// from an available peer
+function DataPair(server, threshold) {
+  // Server threshold defaults to 2
+  const serverThreshold = threshold || 2;
 
-const DataPairConfigurations = { 
-  serverThreshold: 2,
-  imageTransfer: true,
-  geoConnect: false,
-};
+  // Keep track of initiators
+  const inits = new Initiators();
+  const initList = inits.list;
+  let initNumber = 0;
+  const currentSenders = {};
 
-const inits = new Initiators();
-const initList = inits.list;
-let initNumber = 0;
-const currentSenders = {};
-let imageRequests = 0; // track server, for demonstration purposes 
-
-
-////////////////////////////// Test Server Routes //////////////////////////////
-
-app.use(express.static(path.join(__dirname, './../client')));
-
-app.get('/images/:imageName', (req, res) => {
-    imageName = req.params.imageName;
-    // console.log(imageName);
-    let url = ('./../Images/' + imageName + '.jpg');
-    // console.log(url);
-    res.sendFile(path.join(__dirname, url))
-    imageRequests++
-    console.log('This many total imageRequests:', imageRequests);
-})
-
-////////////////////////////// Client Configuration Inputs //////////////////////////////
-
-DataPair(server, DataPairConfigurations);
-
-////////////////////////////// Socket listeners //////////////////////////////
-
-function DataPair(server, DataPairConfigurations) {
-
-  // Default Configuration Settings
-  DataPairConfigurations = {... DataPairConfigurations}
-  DataPairConfigurations.threshold = DataPairConfigurations.serverThreshold || 1;
-  DataPairConfigurations.imageTransfer = DataPairConfigurations.imageTransfer !== false; // // need to add conditions
-  // asset  types if jpeg, gif
-  // browser comp. 
-  // device 
-  //DataPairConfigurations.geoConnect = DataPairConfigurations.geoConnect !== false; // need to add conditions
-  
   const io = socket(server);
   
   io.on('connection', function(client) {
-    console.log('Welcome', client.id);
     
-    client.emit('retrieve_data');
-
-    client.on('retrieve_data', (downloaded) => {
-      if (!downloaded) getData(client, io, DataPairConfigurations);
-      else console.log('We meet again!');
+    // Check if client has already downloaded data
+    client.emit('check_data');
+    client.on('check_data', (downloaded) => {
+      if (!downloaded) getData(client, io, serverThreshold);
     });
-
-    client.on('initButton', () => {
-      console.log('initNumber:', initNumber);
-      console.log('initList:', initList);
-    })
     
-    client.on('sendy', () => {
+    // Handle client becoming available
+    client.on('available', () => {
+      // Add them to list of available initiators
       inits.add(client.id); 
+      // If the client was sending, remove them from list of current senders
       if (currentSenders[client.id]) {
         delete currentSenders[client.id];
       } 
       initNumber++;
     });
     
+    // Handle client disconnecting
     client.on('disconnect', () => {
+      // If the client was an available initiator, remove them
       if (initList[client.id]) {
       inits.remove(client.id);
       initNumber--;
-      // console.log(initNumber, 'are available');
       } 
+      // If the client was currently sending files, tell the receiver to get data from server instead
       if (currentSenders[client.id]) {
         io.to(currentSenders[client.id]).emit('access_directly_from_server');
         delete currentSenders[client.id];
-        // console.log('After removal, current senders is:', Object.keys(currentSenders));
       } 
     }); 
 
-    client.on('message', (messageReceived, recipient) => {
-      io.to(recipient).emit('message', messageReceived);
+    // Pass signaling messages along to paired client
+    client.on('signaling', (messageReceived, recipient) => {
+      io.to(recipient).emit('signaling', messageReceived);
     });
   })
-}
 
-function getData(client, io) { 
-  if (!DataPairConfigurations.imageTransfer) { // Image transfer off
-    console.log('imageTransfer is', DataPairConfigurations.imageTransfer);
-    client.emit('access_directly_from_server');
-  } else if (initNumber < DataPairConfigurations.serverThreshold) { // Not enough peers
-    console.log('Not starting because initNumber is', initNumber, 'but threshold is', DataPairConfigurations.serverThreshold);
-    client.emit('access_directly_from_server');
-  } else { // Do the peer connection
-    console.log('inintnumber is', initNumber, 'threshold is', DataPairConfigurations.serverThreshold)
-    console.log('Initiating a connection between',inits.head, 'and', client.id);
-    client.emit('receiver', inits.head);
-    io.to(inits.head).emit('sender', client.id);
-    currentSenders[inits.head] = client.id;
-    // console.log('After addition, current senders is:', Object.keys(currentSenders));
-    inits.remove(inits.head);
-    initNumber--;
+  // Get data from either server or another client
+  function getData(client, io, serverThreshold) { 
+
+    // If there are not enough available clients, get directly from server
+    if (initNumber < serverThreshold) { 
+      client.emit('access_directly_from_server');
+    } else { // Otherwise, get data from a peer
+      // Pair the two clients
+      client.emit('receiver', inits.head);
+      io.to(inits.head).emit('sender', client.id);
+      // Update list of potential initiators
+      currentSenders[inits.head] = client.id;
+      inits.remove(inits.head);
+      initNumber--;
+    }
   }
 }
 
-server.listen(3000);
-
+module.exports = (server, threshold) => {
+  DataPair(server, threshold);
+}
