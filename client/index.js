@@ -1,104 +1,84 @@
 let initiator = false;
-let config = null;
-let images = document.getElementById('imageList');
-let button = document.getElementById('initList');
 let partnerID;
 let downloaded = false;
 let pc;
 let dataChannel;
 
+////////////////// Socket functions //////////////////
 
-// const socket = io.connect('localhost:3000');
-const socket = io.connect('http://ec2-18-188-104-222.us-east-2.compute.amazonaws.com:3000');
+const socket = io.connect();
 
-// button.addEventListener('click', () => socket.emit('initButton'));
-
-socket.on('message', (input) => {
+// Handles signaling messages
+socket.on('signaling', (input) => {
   signalingMessageCallback(input);
 })
 
+// Gets images from server when directed
 socket.on('access_directly_from_server', () => {
-  console.log('Getting images from server');
   getImagesFromServer();
 })
 
+// Initiates connection as a receiver
 socket.on('receiver', (senderID) => {
-  console.log('Time for me to receive');
   partnerID = senderID;
-  createPeerConnection();
+  createPeerConnection(initiator);
 })
 
+// Initiates connection as a sender
 socket.on('sender', (receiverID) => {
-  console.log('Time for me to send');
   partnerID = receiverID;
   initiator = true;
-  createPeerConnection();
+  createPeerConnection(initiator);
 })
 
-socket.on('retrieve_data', () => {
-  socket.emit('retrieve_data', downloaded);
+// Tell server if data has already been downloaded
+socket.on('check_data', () => {
+  socket.emit('check_data', downloaded);
 })
 
-////////////////////////////////////////////////////// Photo functions //////////////////////////////////////////////////////
- 
+////////////////// Photo functions //////////////////
 
-// let imageNames = ['cliff', 'gooddog', 'lava', 'ocean', '1'];
-let imageNames = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20'];
+// Get list of tagged images for P2P transfer
+let allImages = Object.values(document.getElementsByTagName('img'));
+imageArray = allImages.filter(image => image.hasAttribute('data-p2p'));
 
-for (let i = 0; i < imageNames.length; i++) {
-    let div = document.createElement('div');
-    let image = document.createElement('img');
-    image.setAttribute('id', imageNames[i]);
-    // image.setAttribute('data-p2p', 'http://localhost:3000/images/' + imageNames[i]);
-    image.setAttribute('data-p2p', 'http://ec2-18-188-104-222.us-east-2.compute.amazonaws.com:3000/images/' + imageNames[i]);
-    image.setAttribute('crossOrigin', 'anonymous');
-    image.className = 'images';
-    div.appendChild(image);
-    images.append(div);
-}
-
-let imageArray = Object.values(document.getElementsByTagName('img'));
-imageArray = imageArray.filter(image => image.hasAttribute('data-p2p'));
-
-/// For base initiator
+// Get images directly from server instead of P2P
 function getImagesFromServer() {
-
   imageArray.forEach(image => {
     image.setAttribute('src', (image.getAttribute('data-p2p')))
   })
   readyToSend();
 }
 
+// Send downloaded photos to a new client in the network
 function sendAllPhotos() {
-    // dataChannel.send('starting');
-
   imageArray.forEach(image => {
-    console.log('Sending', image.id);
     sendPhoto(image);
   })
   dataChannel.send('all-done');
   readyToSend();
 }
 
+// Send an individual photo
 function sendPhoto(image) {
   const data = getImageData(image);
-  // console.log('Image data is:', data);
+  // Establish chunks of data
   const CHUNK_LEN = 64000;
   const totalChunks = data.length / CHUNK_LEN;
-  // console.log('This many chunks to send:', totalChunks);
 
   let start;
   let end;
+
+  // Loop through image, sending each chunk
   for (let i = 0; i < totalChunks; i++) {
-    // console.log('Sending chunk', i);
     start = i * CHUNK_LEN;
     end = (i + 1) * CHUNK_LEN;
     dataChannel.send(data.slice(start, end));
   }
-  dataChannel.send('finished');
-  // console.log('Finished sending that photo');
+  dataChannel.send('photo-done');
 }
 
+// Format image data to send
 function getImageData(image) {
   let canvas = document.createElement('canvas');
   let context = canvas.getContext('2d');
@@ -108,38 +88,41 @@ function getImageData(image) {
   return canvas.toDataURL('image/jpeg')
 }
 
+// Handle and receive incoming images
 function receiveData() {
   let imageData = '';
   let counter = 0;
   let dataString;
   return function onMessage(message) {
     dataString = message.data.toString();
-    if (dataString.slice(0, 8) == 'finished') {
+    if (dataString.slice(0, 10) == 'photo-done') {
+        // If all entire image has been sent, place on screen
         setImage(imageData, counter);
         counter++;
         imageData = '';
     } else if (dataString.slice(0, 8) == 'all-done') {
+        // If all images have been sent, tell server
         readyToSend();
     } else {
+        // If sending more data in same image, accumulate the extra data
         imageData += dataString;
     }
   }
 }
 
+// Place image on the canvas
 function setImage(imageData, counter) {
-  // console.log('In setImage');
   imageArray[counter].src = imageData;
 }
 
-////////////////////////////////////////////////////// Signaling functions //////////////////////////////////////////////////////
+////////////////// Signaling functions //////////////////
 
-function createPeerConnection() {
-
-  console.log('Creating peer connection!');
-  pc = new RTCPeerConnection(config);
+// Create an RTC connection with another peer
+function createPeerConnection(initiator) {
+  pc = new RTCPeerConnection();
+  // Send ICE candidates to server
   pc.onicecandidate = (event) => {
     if (event.candidate) {
-      // console.log('onicecandidate event is:', event.candidate);
       sendMessage({
         type: 'candidate',
         label: event.candidate.sdpMLineIndex,
@@ -147,20 +130,16 @@ function createPeerConnection() {
         candidate: event.candidate.candidate
       })
     }
-    // else console.log('Out of candidates');
   }
   if (initiator) {
-    console.log('I am sending!');
     // Create the data channel, label it messages
     dataChannel = pc.createDataChannel('messages');
     // Set up handlers for new data channel
     onDataChannelCreated(dataChannel)
-
-    // Create offer, then pass to onLocalDescription
-    // (which sets as local description and sends it)
+    // Create offer, then pass to onLocalDescription,
+    // which sets as local description and sends it
     pc.createOffer(onLocalDescription, logError);
   } else {
-    console.log('I am receiving!');
     // Create an ondatachannel handler to respond
     // when the data channel from the other client arrives
     pc.ondatachannel = (event) => {
@@ -170,54 +149,55 @@ function createPeerConnection() {
   }
 }
 
+// Receive and handle signaling messages
 function signalingMessageCallback(message) {
   if (message.type === 'candidate') {
-    // console.log('Received icecandidate:', message.candidate);
     pc.addIceCandidate(new RTCIceCandidate({candidate: message.candidate}));
   } else if (message.type === 'answer') {
-    // console.log('Received answer:', message);
-    pc.setRemoteDescription(new RTCSessionDescription(message), () => {}, logError);
+    onRemoteDescription(message);
   } else if (message.type === 'offer') {
-    // console.log('Received offer:', message);
-    pc.setRemoteDescription(new RTCSessionDescription(message), () => {}, logError)
+    onRemoteDescription(message);
     pc.createAnswer(onLocalDescription, logError);
   }
 }
 
+// Handler for creation of data channel itself
 function onDataChannelCreated(channel) {
   channel.onopen = () => {
-    // console.log('Channel opened');
     if (initiator) {
       sendAllPhotos();           
     } 
   }
 
-  channel.onclose = () => {
-    // console.log('Channel closed');
-  }
-
   channel.onmessage = receiveData();
 }
 
+// Set the local description and send
 function onLocalDescription(desc) {
   pc.setLocalDescription(desc, () => {
-    // console.log('Sending local description:', pc.localDescription);
     sendMessage(pc.localDescription)
   }, logError);
 }
 
-////////////////////////////////////////////////////// Messaging functions //////////////////////////////////////////////////////
+// Set the remote description
+function onRemoteDescription(desc) {
+  pc.setRemoteDescription(new RTCSessionDescription(desc), () => {}, logError);
+}
 
+////////////////// Server communication functions //////////////////
+
+// Tell server that client is ready to send files to new peers
 function readyToSend() {
   downloaded = true;
-  console.log('Ready to send!');
-  socket.emit('sendy');
+  socket.emit('available');
 }
 
+// Emit signaling messages to server
 function sendMessage(message) {
-  socket.emit('message', message, partnerID);
+  socket.emit('signaling', message, partnerID);
 }
 
+// Log errors
 function logError(err) {
   console.log('Error:', err);
 }
