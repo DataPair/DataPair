@@ -8,25 +8,25 @@ Once you've done this, Data Pair takes care of the rest: maintaining the network
 
 ## Getting started
 **Server**
- - [ ] NPM install Data-Pair-Server:
+ - [ ] NPM install Data-Pair-Server:  
 ```npm install --save data-pair-server```
- - [ ] Require the Data Pair module into your server file:
+ - [ ] Require the Data Pair module into your server file:  
 ```DataPair = Require('data-pair-server');```
- - [ ]  Invoke Data Pair, inputting your server and the threshold of how many available peers must exist before new clients are redirected to get static assets from the CDN instead of the server:
+ - [ ]  Invoke Data Pair, inputting your server and the threshold of how many available peers must exist before new clients are redirected to get static assets from the CDN instead of the server:  
 ```DataPair(server, threshold);```
 
 **Client**
- - [ ] Include a src link to the client-side UNPKG file:
+ - [ ] Include a src link to the client-side UNPKG file:  
  ```<script  src="https://unpkg.com/data-pair-client"></script>```
- - [ ] Add a custom data attribute called 'data-p2p' to all assets that should be shared through the network:
+ - [ ] Add a custom data attribute called 'data-p2p' to all assets that should be shared through the network:  
  ```<img data-p2p="sourceURL">```
 
  **Usage**
  * From there, it just works: new clients will request the static assets directly from the server up until your chosen threshold, at which point they'll be redirected to the P2P CDN.
  ## Contributors
- Ben Hawley (https://github.com/benjaminhawley)
- Shahrukh Jalil (https://github.com/jalilshahrukh)
- David Destefano (https://github.com/david-dest01)
+ Ben Hawley (https://github.com/benjaminhawley)  
+ Shahrukh Jalil (https://github.com/jalilshahrukh)  
+ David Destefano (https://github.com/david-dest01)  
  Mahfuz Kabir (https://github.com/mahfuzk)
 
 Found a bug? Have a suggestion? Want to make Data Pair better? Please submit issues/pull requests if you have feedback or would like to contribute.
