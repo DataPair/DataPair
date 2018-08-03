@@ -74,6 +74,4 @@ function DataPair(server, threshold) {
   }
 }
 
-module.exports = (server, threshold) => {
-  DataPair(server, threshold);
-}
+module.exports = DataPair;
