@@ -1,4 +1,4 @@
-![Data Pair](https://github.com/DataPair/DataPair/tree/master/assets/data_pair_logo.jpg)
+![Data Pair](https://github.com/DataPair/DataPair/blob/master/assets/data_pair_logo.jpg)
 
 Data Pair is a JavaScript library that uses WebRTC to create a P2P CDN for static assets in Node applications.
 
@@ -34,4 +34,4 @@ Found a bug? Have a suggestion? Want to make Data Pair better? Please submit iss
 If you're interested in joining the Data Pair team as a contributor, feel free to reach out at datapairNPM@gmail.com.
 
 ## License
-This project is licensed under the MIT License - see the [LICENSE.txt](https://github.com/DataPair/DataPair/tree/master/license.txt] file for details
+This project is licensed under the MIT License - see the [LICENSE.md](https://github.com/DataPair/DataPair/blob/master/license.md) file for details
