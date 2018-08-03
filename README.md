@@ -9,16 +9,24 @@ Once you've done this, Data Pair takes care of the rest: maintaining the network
 ## Getting started
 **Server**
  - [ ] NPM install Data-Pair-Server:  
+   
 ```npm install --save data-pair-server```
+  
  - [ ] Require the Data Pair module into your server file:  
+   
 ```DataPair = Require('data-pair-server');```
+  
  - [ ]  Invoke Data Pair, inputting your server and the threshold of how many available peers must exist before new clients are redirected to get static assets from the CDN instead of the server:  
+   
 ```DataPair(server, threshold);```
-
+  
 **Client**
  - [ ] Include a src link to the client-side UNPKG file:  
+   
  ```<script  src="https://unpkg.com/data-pair-client"></script>```
+   
  - [ ] Add a custom data attribute called 'data-p2p' to all assets that should be shared through the network:  
+   
  ```<img data-p2p="sourceURL">```
 
  **Usage**
