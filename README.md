@@ -1,5 +1,7 @@
 ![Data Pair](https://github.com/DataPair/DataPair/blob/master/assets/data_pair_logo.jpg)
 
+## About
+
 Data Pair is a JavaScript library that uses WebRTC to create a P2P CDN for static assets in Node applications.
 
 Data Pair is easy to implement: a node module for your server file, an UNPKG script for the client side, and custom tags for images that you'd like distributed through the network.
