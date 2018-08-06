@@ -1,4 +1,4 @@
-![Data Pair](https://github.com/DataPair/DataPair/blob/master/assets/data_pair_logo.jpg)
+![Data Pair](https://github.com/DataPair/DataPair/blob/master/assets/data_pair_logo.png)
 
 ## About
 
