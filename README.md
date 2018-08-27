@@ -16,7 +16,7 @@ Once you've done this, Data Pair takes care of the rest: maintaining the network
   
  - [ ] Require the Data Pair module into your server file:  
    
-```DataPair = Require('data-pair-server');```
+```DataPair = require('data-pair-server');```
   
  - [ ]  Invoke Data Pair, inputting your server and the threshold of how many available peers must exist before new clients are redirected to get static assets from the CDN instead of the server:  
    
